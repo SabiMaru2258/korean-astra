@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tasks     Task[]
+  briefings BriefingLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  priority    Priority
+  status      Status
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BriefingLog {
+  id              String   @id @default(cuid())
+  roleId          String
+  role            Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  generatedAt     DateTime @default(now())
+  top3            String   // JSON string array
+  alerts          String   // JSON string array
+  blockers        String   // JSON string array
+  dueOverdue      String   // JSON string array
+  rawInputSummary String?
+}
+
