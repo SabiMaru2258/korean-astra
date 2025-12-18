@@ -10,7 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Loader2, ShieldCheck, Sparkles, Users, CheckCircle2, Ban, Trash2, RefreshCw, Eraser } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type UserItem = { username: string };
+type UserItem = { 
+  id: string;
+  username: string; 
+  role: string;
+  isActive: boolean;
+  reputation: number;
+  createdAt: string;
+};
 type ResetTicket = {
   id: string;
   username: string;
@@ -39,10 +46,10 @@ export default function AdminPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/users", { cache: "no-store" });
+      const res = await fetch("/api/admin/users", { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
-      setUsers(data.users || []);
+      setUsers(data || []);
     } catch {
       // ignore list fetch errors
     }
@@ -92,10 +99,10 @@ export default function AdminPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role }),
+        body: JSON.stringify({ username, password, role: role.toUpperCase() }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -180,23 +187,33 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = async (userToDelete: string) => {
+    if (!confirm(`Are you sure you want to disable user "${userToDelete}"?`)) {
+      return;
+    }
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch("/api/users/delete", {
-        method: "POST",
+      // Find user ID first
+      const user = users.find(u => u.username === userToDelete);
+      if (!user) {
+        throw new Error("User not found");
+      }
+      
+      // Disable user instead of deleting (safer - preserves data)
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: userToDelete }),
+        body: JSON.stringify({ isActive: false }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to delete user");
+        throw new Error(data?.error || "Failed to disable user");
       }
-      setMessage(`Deleted user ${data.username}`);
+      setMessage(`User "${userToDelete}" has been disabled`);
       await fetchUsers();
       await fetchTickets();
     } catch (err: any) {
-      setError(err.message || "Failed to delete user");
+      setError(err.message || "Failed to disable user");
     }
   };
 
@@ -204,19 +221,19 @@ export default function AdminPage() {
     <AuthGuard allowedRoles={["admin"]}>
       <Topbar title="Admin User Onboarding" />
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 py-8">
-          <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
             <Card>
               <CardHeader>
                 <CardTitle>Ops Overview (Admin)</CardTitle>
                 <CardDescription>Spot anomalies fast and ensure data pipelines stay clean.</CardDescription>
               </CardHeader>
-              <CardContent className="flex justify-between items-center">
+              <CardContent className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <div className="text-sm text-gray-600 dark:text-gray-300">
                   Upload CSVs to validate data quality and review AI summaries.
                 </div>
                 <Link href="/dashboard">
-                  <Button size="sm" variant="outline">Open</Button>
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto">Open</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -269,11 +286,12 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-100">Password</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Generate or paste password"
+                      className="flex-1"
                     />
                     <Button
                       type="button"
@@ -281,6 +299,7 @@ export default function AdminPage() {
                       onClick={handleGeneratePassword}
                       disabled={loadingPw}
                       title="AI-generate password"
+                      className="w-full sm:w-auto"
                     >
                       {loadingPw ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -349,18 +368,29 @@ export default function AdminPage() {
                   <ul className="space-y-2">
                     {users.map((u) => (
                       <li
-                        key={u.username}
-                        className="flex items-center justify-between rounded-md border px-3 py-2 text-sm text-gray-700 dark:text-gray-100 dark:border-gray-800"
+                        key={u.id}
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-md border px-3 py-2 text-sm text-gray-700 dark:text-gray-100 dark:border-gray-800 gap-2 sm:gap-0"
                       >
-                        <span>{u.username}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-300">{u.role || "user"}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{u.username}</span>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-300">
+                            <span className={`px-1.5 py-0.5 rounded ${u.role === "ADMIN" ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"}`}>
+                              {u.role}
+                            </span>
+                            {!u.isActive && (
+                              <span className="text-red-500">Inactive</span>
+                            )}
+                            <span>Rep: {u.reputation}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
                           <Button
                             type="button"
                             size="icon"
                             variant="ghost"
                             onClick={() => handleDeleteUser(u.username)}
                             title="Delete user"
+                            className="h-8 w-8"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -437,7 +467,7 @@ export default function AdminPage() {
                           <p className="text-xs text-gray-600 dark:text-gray-300">Note: {t.message}</p>
                         )}
                         {t.status === "pending" && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <Input
                               placeholder="New password"
                               value={ticketPasswords[t.id] || ""}
@@ -447,21 +477,23 @@ export default function AdminPage() {
                                   [t.id]: e.target.value,
                                 }))
                               }
+                              className="flex-1"
                             />
                             <Button
                               type="button"
                               size="sm"
-                              className="gap-2"
+                              className="gap-2 w-full sm:w-auto"
                               onClick={() => handleApprove(t.id)}
                             >
                               <CheckCircle2 className="h-4 w-4" />
-                              Approve & reset
+                              <span className="hidden sm:inline">Approve & reset</span>
+                              <span className="sm:hidden">Approve</span>
                             </Button>
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              className="gap-2"
+                              className="gap-2 w-full sm:w-auto"
                               onClick={() => handleDeny(t.id)}
                             >
                               <Ban className="h-4 w-4" />

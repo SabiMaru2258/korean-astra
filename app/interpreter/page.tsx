@@ -88,7 +88,7 @@ export default function InterpreterPage() {
     <>
       <Topbar title="Message Interpreter" />
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           <div className="max-w-4xl mx-auto">
             <p className="text-gray-600 mb-8">
               Paste technical documents or notes to get clear summaries and actionable insights

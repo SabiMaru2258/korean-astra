@@ -8,16 +8,16 @@ export default function Home() {
     <>
       <Topbar title="Welcome" />
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 py-16">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">AstraSemi Assistant</h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-8 sm:py-12 lg:py-16">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">AstraSemi Assistant</h1>
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               Your friendly AI assistant for semiconductor operations. 
               Get clear, simple explanations and actionable insights for your daily work.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8 sm:mt-12">
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle>Operations Dashboard</CardTitle>

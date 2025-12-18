@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AstraSemi Assistant",
   description: "AI-powered assistant for semiconductor operations",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+  },
 };
 
 export default function RootLayout({
@@ -17,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className}`} suppressHydrationWarning>
         <ThemeProvider>
           <LayoutShell>{children}</LayoutShell>
         </ThemeProvider>

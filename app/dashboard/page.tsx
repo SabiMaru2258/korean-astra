@@ -124,9 +124,9 @@ export default function DashboardPage() {
     <>
       <Topbar title="Operations Overview Dashboard" />
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
           <div className="max-w-4xl mx-auto">
-            <p className="text-gray-600 mb-8">
+            <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">
               Upload a CSV file to get an AI-powered summary of your operations data
             </p>
 

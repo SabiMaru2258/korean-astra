@@ -1,6 +1,7 @@
 [
   {
-    "username": "steph",
-    "passwordHash": "019a39dbcac97131aab17961db95c28c8d13bbe12c402c9078fb109f376ddd0e"
+    "username": "timmy",
+    "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    "role": "user"
   }
 ]

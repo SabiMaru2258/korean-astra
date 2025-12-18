@@ -1,16 +1,17 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// PostgreSQL schema for production deployment (Render)
+// Copy this to schema.prisma when deploying to Render
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// SQLite doesn't support enums, using String instead
+// SQLite doesn't support enums, but PostgreSQL does
+// For PostgreSQL, we can use enums, but keeping as String for compatibility
 
 model Role {
   id        String   @id @default(cuid())

@@ -1,20 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { verifyToken } from "./lib/auth";
 
-const PUBLIC_PATHS = ["/login"];
-
-function decodeSession(token?: string) {
-  if (!token) return null;
-  try {
-    const [payload] = token.split(".");
-    if (!payload) return null;
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const json = atob(padded);
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
+const PUBLIC_PATHS = ["/login", "/admin/login"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -23,18 +10,14 @@ export function middleware(req: NextRequest) {
   if (
     PUBLIC_PATHS.includes(pathname) ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/api")
   ) {
     return NextResponse.next();
   }
 
   const token = req.cookies.get("session")?.value;
-  const session = decodeSession(token);
-
-  // API routes rely on their own checks
-  if (pathname.startsWith("/api")) {
-    return NextResponse.next();
-  }
+  const session = verifyToken(token);
 
   if (!session) {
     const loginUrl = new URL("/login", req.url);
@@ -42,10 +25,14 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Protect /admin routes - only ADMIN role
   if (pathname.startsWith("/admin") && session.role !== "admin") {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }
+
+  // /community routes are protected (any authenticated user can access)
+  // This is already handled by the session check above
 
   return NextResponse.next();
 }

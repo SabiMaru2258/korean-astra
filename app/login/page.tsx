@@ -30,7 +30,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -43,6 +43,7 @@ export default function LoginPage() {
       const target =
         data.role === "admin" ? "/admin" : from && from !== "/login" ? from : "/dashboard";
       router.replace(target);
+      router.refresh();
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
@@ -83,18 +84,18 @@ export default function LoginPage() {
               <Sparkles className="h-3.5 w-3.5" />
               AstraSemi Secure Access
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
               Sign in to your AI workspace
             </h1>
-            <p className="text-base md:text-lg text-white/80">
+            <p className="text-sm sm:text-base md:text-lg text-white/80">
               Admins onboard teammates and generate secure passwords. Users can jump straight into dashboards, interpreters, and image explainers.
             </p>
-            <div className="flex flex-wrap gap-3 text-sm text-white/90">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
-                <ShieldCheck className="h-4 w-4" /> Admin: <code className="text-xs">admin / admin</code>
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-white/90">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2">
+                <ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4" /> Admin: <code className="text-xs">admin / admin</code>
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2">
-                <ArrowRight className="h-4 w-4" /> Users: use admin-issued credentials
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2 sm:px-3 py-1.5 sm:py-2">
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" /> Users: use admin-issued credentials
               </span>
             </div>
           </div>
