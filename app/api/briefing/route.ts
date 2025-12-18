@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
-import { Priority, Status } from "@prisma/client";
+import { Priority, Status, PriorityValues, StatusValues } from "@/lib/types";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -15,14 +15,14 @@ function generateFallbackBriefing(tasks: any[]) {
 
   // Top 3 actions: highest priority TODO/IN_PROGRESS with nearest dueDate
   const activeTasks = tasks.filter(
-    (t) => t.status === Status.TODO || t.status === Status.IN_PROGRESS
+    (t) => t.status === StatusValues.TODO || t.status === StatusValues.IN_PROGRESS
   );
   const sortedByPriority = activeTasks.sort((a, b) => {
-    const priorityOrder = {
-      [Priority.CRITICAL]: 4,
-      [Priority.HIGH]: 3,
-      [Priority.MEDIUM]: 2,
-      [Priority.LOW]: 1,
+    const priorityOrder: Record<string, number> = {
+      [PriorityValues.CRITICAL]: 4,
+      [PriorityValues.HIGH]: 3,
+      [PriorityValues.MEDIUM]: 2,
+      [PriorityValues.LOW]: 1,
     };
     const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
     if (priorityDiff !== 0) return priorityDiff;
@@ -38,21 +38,21 @@ function generateFallbackBriefing(tasks: any[]) {
 
   // Alerts: CRITICAL tasks not DONE + overdue items
   const criticalNotDone = tasks
-    .filter((t) => t.priority === Priority.CRITICAL && t.status !== Status.DONE)
+    .filter((t) => t.priority === PriorityValues.CRITICAL && t.status !== StatusValues.DONE)
     .map((t) => t.title);
   const overdue = tasks
     .filter(
       (t) =>
         t.dueDate &&
         new Date(t.dueDate) < today &&
-        t.status !== Status.DONE
+        t.status !== StatusValues.DONE
     )
     .map((t) => t.title);
   const alerts = [...new Set([...criticalNotDone, ...overdue])];
 
   // Blockers: BLOCKED tasks
   const blockers = tasks
-    .filter((t) => t.status === Status.BLOCKED)
+    .filter((t) => t.status === StatusValues.BLOCKED)
     .map((t) => t.title);
 
   // Due/overdue: dueDate <= today
@@ -61,7 +61,7 @@ function generateFallbackBriefing(tasks: any[]) {
       (t) =>
         t.dueDate &&
         new Date(t.dueDate) <= today &&
-        t.status !== Status.DONE
+        t.status !== StatusValues.DONE
     )
     .map((t) => `${t.title} (due: ${new Date(t.dueDate!).toLocaleDateString()})`);
 
@@ -182,6 +182,9 @@ Return ONLY valid JSON, no markdown, no code blocks.`;
           temperature: 0.3,
         });
         const retryContent = retryCompletion.choices[0].message.content;
+        if (!retryContent) {
+          throw new Error("Failed to parse AI response");
+        }
         const jsonMatch = retryContent.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           result = JSON.parse(jsonMatch[0]);

@@ -151,7 +151,6 @@ export async function POST(req: NextRequest) {
           },
         },
         votes: true,
-        answers: [],
         _count: {
           select: {
             votes: true,

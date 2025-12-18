@@ -15,7 +15,7 @@ import {
 import Topbar from "@/components/Topbar";
 import { Loader2, Plus, CheckCircle2, Circle, AlertCircle, Clock, X } from "lucide-react";
 import Logo from "@/components/Logo";
-import { Priority, Status } from "@prisma/client";
+import { Priority, Status, PriorityValues, StatusValues } from "@/lib/types";
 
 interface Role {
   id: string;
@@ -59,8 +59,8 @@ export default function RoleBriefingPage() {
   // Form state for create/edit
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formPriority, setFormPriority] = useState<Priority>(Priority.MEDIUM);
-  const [formStatus, setFormStatus] = useState<Status>(Status.TODO);
+  const [formPriority, setFormPriority] = useState<Priority>(PriorityValues.MEDIUM);
+  const [formStatus, setFormStatus] = useState<Status>(StatusValues.TODO);
   const [formDueDate, setFormDueDate] = useState("");
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function RoleBriefingPage() {
       await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: Status.DONE }),
+        body: JSON.stringify({ status: StatusValues.DONE }),
       });
       loadTasks(selectedRoleId!);
     } catch (err: any) {
@@ -205,8 +205,8 @@ export default function RoleBriefingPage() {
   const resetForm = () => {
     setFormTitle("");
     setFormDescription("");
-    setFormPriority(Priority.MEDIUM);
-    setFormStatus(Status.TODO);
+    setFormPriority(PriorityValues.MEDIUM);
+    setFormStatus(StatusValues.TODO);
     setFormDueDate("");
   };
 
@@ -222,24 +222,24 @@ export default function RoleBriefingPage() {
 
   const getPriorityColor = (priority: Priority) => {
     switch (priority) {
-      case Priority.CRITICAL:
+      case PriorityValues.CRITICAL:
         return "bg-red-100 text-red-800";
-      case Priority.HIGH:
+      case PriorityValues.HIGH:
         return "bg-orange-100 text-orange-800";
-      case Priority.MEDIUM:
+      case PriorityValues.MEDIUM:
         return "bg-yellow-100 text-yellow-800";
-      case Priority.LOW:
+      case PriorityValues.LOW:
         return "bg-blue-100 text-blue-800";
     }
   };
 
   const getStatusIcon = (status: Status) => {
     switch (status) {
-      case Status.DONE:
+      case StatusValues.DONE:
         return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-      case Status.IN_PROGRESS:
+      case StatusValues.IN_PROGRESS:
         return <Clock className="h-5 w-5 text-blue-600" />;
-      case Status.BLOCKED:
+      case StatusValues.BLOCKED:
         return <AlertCircle className="h-5 w-5 text-red-600" />;
       default:
         return <Circle className="h-5 w-5 text-gray-400" />;
@@ -339,10 +339,10 @@ export default function RoleBriefingPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">All Status</SelectItem>
-                        <SelectItem value={Status.TODO}>To Do</SelectItem>
-                        <SelectItem value={Status.IN_PROGRESS}>In Progress</SelectItem>
-                        <SelectItem value={Status.BLOCKED}>Blocked</SelectItem>
-                        <SelectItem value={Status.DONE}>Done</SelectItem>
+                        <SelectItem value={StatusValues.TODO}>To Do</SelectItem>
+                        <SelectItem value={StatusValues.IN_PROGRESS}>In Progress</SelectItem>
+                        <SelectItem value={StatusValues.BLOCKED}>Blocked</SelectItem>
+                        <SelectItem value={StatusValues.DONE}>Done</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v as Priority | "ALL")}>
@@ -351,10 +351,10 @@ export default function RoleBriefingPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">All Priorities</SelectItem>
-                        <SelectItem value={Priority.CRITICAL}>Critical</SelectItem>
-                        <SelectItem value={Priority.HIGH}>High</SelectItem>
-                        <SelectItem value={Priority.MEDIUM}>Medium</SelectItem>
-                        <SelectItem value={Priority.LOW}>Low</SelectItem>
+                        <SelectItem value={PriorityValues.CRITICAL}>Critical</SelectItem>
+                        <SelectItem value={PriorityValues.HIGH}>High</SelectItem>
+                        <SelectItem value={PriorityValues.MEDIUM}>Medium</SelectItem>
+                        <SelectItem value={PriorityValues.LOW}>Low</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -394,7 +394,7 @@ export default function RoleBriefingPage() {
                                 </div>
                               </div>
                             </div>
-                            {task.status !== Status.DONE && (
+                            {task.status !== StatusValues.DONE && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -532,10 +532,10 @@ export default function RoleBriefingPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={Priority.LOW}>Low</SelectItem>
-                    <SelectItem value={Priority.MEDIUM}>Medium</SelectItem>
-                    <SelectItem value={Priority.HIGH}>High</SelectItem>
-                    <SelectItem value={Priority.CRITICAL}>Critical</SelectItem>
+                    <SelectItem value={PriorityValues.LOW}>Low</SelectItem>
+                    <SelectItem value={PriorityValues.MEDIUM}>Medium</SelectItem>
+                    <SelectItem value={PriorityValues.HIGH}>High</SelectItem>
+                    <SelectItem value={PriorityValues.CRITICAL}>Critical</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -546,10 +546,10 @@ export default function RoleBriefingPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={Status.TODO}>To Do</SelectItem>
-                    <SelectItem value={Status.IN_PROGRESS}>In Progress</SelectItem>
-                    <SelectItem value={Status.BLOCKED}>Blocked</SelectItem>
-                    <SelectItem value={Status.DONE}>Done</SelectItem>
+                    <SelectItem value={StatusValues.TODO}>To Do</SelectItem>
+                    <SelectItem value={StatusValues.IN_PROGRESS}>In Progress</SelectItem>
+                    <SelectItem value={StatusValues.BLOCKED}>Blocked</SelectItem>
+                    <SelectItem value={StatusValues.DONE}>Done</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -611,10 +611,10 @@ export default function RoleBriefingPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={Priority.LOW}>Low</SelectItem>
-                    <SelectItem value={Priority.MEDIUM}>Medium</SelectItem>
-                    <SelectItem value={Priority.HIGH}>High</SelectItem>
-                    <SelectItem value={Priority.CRITICAL}>Critical</SelectItem>
+                    <SelectItem value={PriorityValues.LOW}>Low</SelectItem>
+                    <SelectItem value={PriorityValues.MEDIUM}>Medium</SelectItem>
+                    <SelectItem value={PriorityValues.HIGH}>High</SelectItem>
+                    <SelectItem value={PriorityValues.CRITICAL}>Critical</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -625,10 +625,10 @@ export default function RoleBriefingPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={Status.TODO}>To Do</SelectItem>
-                    <SelectItem value={Status.IN_PROGRESS}>In Progress</SelectItem>
-                    <SelectItem value={Status.BLOCKED}>Blocked</SelectItem>
-                    <SelectItem value={Status.DONE}>Done</SelectItem>
+                    <SelectItem value={StatusValues.TODO}>To Do</SelectItem>
+                    <SelectItem value={StatusValues.IN_PROGRESS}>In Progress</SelectItem>
+                    <SelectItem value={StatusValues.BLOCKED}>Blocked</SelectItem>
+                    <SelectItem value={StatusValues.DONE}>Done</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
