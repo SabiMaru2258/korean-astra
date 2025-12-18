@@ -10,6 +10,13 @@ const TIMEOUT_MS = 30000;
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Missing OpenAI API key on the server" },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { text, mode } = body;
 

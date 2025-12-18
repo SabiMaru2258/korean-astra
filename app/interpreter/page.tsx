@@ -18,9 +18,16 @@ interface InterpretationResponse {
 export default function InterpreterPage() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<InterpretationResponse | null>(null);
+  const [summaryResult, setSummaryResult] = useState<InterpretationResponse | null>(null);
+  const [emailDraft, setEmailDraft] = useState<string | null>(null);
+  const [updateDraft, setUpdateDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [converting, setConverting] = useState<string | null>(null);
+  const [converting, setConverting] = useState<"email" | "update" | null>(null);
+
+  const openEmailClient = (body: string) => {
+    const mailtoLink = `mailto:?subject=${encodeURIComponent("Draft email")}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
+  };
 
   const handleInterpret = async (mode: "summary" | "email" | "update" = "summary") => {
     if (!text.trim()) {
@@ -47,18 +54,27 @@ export default function InterpreterPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to interpret document");
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to interpret document");
+      }
       
       if (mode === "summary") {
-        setResult(data);
+        setSummaryResult({
+          summary: data.summary,
+          keyPoints: data.keyPoints || [],
+          followUpActions: data.followUpActions || [],
+          convertedEmail: data.convertedEmail,
+          convertedUpdate: data.convertedUpdate,
+        });
+        if (data.convertedEmail) setEmailDraft(data.convertedEmail);
+        if (data.convertedUpdate) setUpdateDraft(data.convertedUpdate);
       } else if (mode === "email" && data.convertedEmail) {
-        setResult({ ...result!, convertedEmail: data.convertedEmail });
+        setEmailDraft(data.convertedEmail);
+        openEmailClient(data.convertedEmail);
       } else if (mode === "update" && data.convertedUpdate) {
-        setResult({ ...result!, convertedUpdate: data.convertedUpdate });
+        setUpdateDraft(data.convertedUpdate);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
@@ -106,38 +122,34 @@ export default function InterpreterPage() {
                   "Generate Summary"
                 )}
               </Button>
-              {result && (
-                <>
-                  <Button
-                    onClick={() => handleInterpret("email")}
-                    disabled={converting === "email"}
-                    variant="outline"
-                  >
-                    {converting === "email" ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Converting...
-                      </>
-                    ) : (
-                      "Convert to Email"
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => handleInterpret("update")}
-                    disabled={converting === "update"}
-                    variant="outline"
-                  >
-                    {converting === "update" ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Converting...
-                      </>
-                    ) : (
-                      "Convert to Update"
-                    )}
-                  </Button>
-                </>
-              )}
+              <Button
+                onClick={() => handleInterpret("email")}
+                disabled={converting === "email" || !text.trim()}
+                variant="outline"
+              >
+                {converting === "email" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Converting...
+                  </>
+                ) : (
+                  "Convert to Email"
+                )}
+              </Button>
+              <Button
+                onClick={() => handleInterpret("update")}
+                disabled={converting === "update" || !text.trim()}
+                variant="outline"
+              >
+                {converting === "update" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Converting...
+                  </>
+                ) : (
+                  "Convert to Update"
+                )}
+              </Button>
             </div>
             {error && (
               <p className="text-red-600 text-sm mt-4">{error}</p>
@@ -145,69 +157,73 @@ export default function InterpreterPage() {
           </CardContent>
         </Card>
 
-        {result && (
+        {(summaryResult || emailDraft || updateDraft) && (
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">{result.summary}</p>
-              </CardContent>
-            </Card>
+            {summaryResult && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-700 leading-relaxed">{summaryResult.summary}</p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Points Explained</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                  {result.keyPoints.map((point, idx) => (
-                    <li key={idx} className="text-gray-700">{point}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Key Points Explained</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="list-disc list-inside space-y-2">
+                      {summaryResult.keyPoints.map((point, idx) => (
+                        <li key={idx} className="text-gray-700">{point}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
 
-            {result.followUpActions.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Suggested Follow-up Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="list-disc list-inside space-y-2">
-                    {result.followUpActions.map((action, idx) => (
-                      <li key={idx} className="text-gray-700">{action}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+                {summaryResult.followUpActions.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Suggested Follow-up Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="list-disc list-inside space-y-2">
+                        {summaryResult.followUpActions.map((action, idx) => (
+                          <li key={idx} className="text-gray-700">{action}</li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
 
-            {result.convertedEmail && (
+            {emailDraft && (
               <Card>
                 <CardHeader>
                   <CardTitle>Professional Email Version</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-gray-50 p-4 rounded border">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                      {result.convertedEmail}
+                  <div className="bg-gray-50 p-4 rounded border dark:bg-gray-900">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-100">
+                      {emailDraft}
                     </pre>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {result.convertedUpdate && (
+            {updateDraft && (
               <Card>
                 <CardHeader>
                   <CardTitle>Manager-Friendly Update</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-gray-50 p-4 rounded border">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                      {result.convertedUpdate}
+                  <div className="bg-gray-50 p-4 rounded border dark:bg-gray-900">
+                    <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-100">
+                      {updateDraft}
                     </pre>
                   </div>
                 </CardContent>

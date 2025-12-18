@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Topbar from "@/components/Topbar";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, Trash2 } from "lucide-react";
 
 interface ImageResponse {
   object: string;
@@ -13,59 +13,89 @@ interface ImageResponse {
 }
 
 export default function ImageIdPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
 
-    if (!selectedFile.type.startsWith("image/")) {
-      setError("Please upload an image file");
-      return;
-    }
-
-    if (selectedFile.size > 10 * 1024 * 1024) {
-      setError("Image size must be less than 10MB");
-      return;
-    }
-
-    setFile(selectedFile);
     setError(null);
     setResult(null);
+    const valid: { file: File; preview: string }[] = [];
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(selectedFile);
+    selectedFiles.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload image files only");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Each image must be less than 10MB");
+        return;
+      }
+      const preview = URL.createObjectURL(file);
+      valid.push({ file, preview });
+    });
+
+    setImages((prev) => [...prev, ...valid]);
+    if (selectedIndex === null && valid.length > 0) {
+      setSelectedIndex(0);
+    }
   };
 
-  const handleRemoveFile = () => {
-    setFile(null);
-    setPreview(null);
+  const handleRemoveSelected = () => {
+    if (selectedIndex === null) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const removed = next.splice(selectedIndex, 1);
+      removed.forEach((img) => URL.revokeObjectURL(img.preview));
+      return next;
+    });
+    setSelectedIndex((idx) => {
+      if (idx === null) return null;
+      const nextLength = images.length - 1;
+      if (nextLength <= 0) return null;
+      return Math.min(idx, nextLength - 1);
+    });
+    setResult(null);
+  };
+
+  const handleClearAll = () => {
+    images.forEach((img) => URL.revokeObjectURL(img.preview));
+    setImages([]);
+    setSelectedIndex(null);
     setResult(null);
   };
 
   const handleIdentify = async () => {
-    if (!file || !preview) return;
+    const target =
+      selectedIndex !== null ? images[selectedIndex] : images.length > 0 ? images[0] : null;
+    if (!target) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Convert to base64
-      const base64 = preview.split(",")[1];
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          const [, data] = res.split(",");
+          resolve(data);
+        };
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(target.file);
+      });
 
       const response = await fetch("/api/module3", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: base64,
-          mimeType: file.type,
+          mimeType: target.file.type,
         }),
       });
 
@@ -100,7 +130,7 @@ export default function ImageIdPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!preview ? (
+            {images.length === 0 ? (
               <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="h-10 w-10 text-gray-400 mb-3" />
@@ -112,25 +142,72 @@ export default function ImageIdPage() {
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleFileChange}
                   className="hidden"
                 />
               </label>
             ) : (
-              <div className="relative">
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="max-w-full h-auto rounded-lg border border-gray-300"
-                />
-                <Button
-                  onClick={handleRemoveFile}
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {images.map((img, idx) => {
+                    const isSelected = idx === selectedIndex;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedIndex(idx)}
+                        className={`relative rounded-lg overflow-hidden border transition focus:outline-none ${
+                          isSelected
+                            ? "border-primary ring-2 ring-primary/50"
+                            : "border-gray-300 hover:border-primary/60"
+                        }`}
+                      >
+                        <img
+                          src={img.preview}
+                          alt={`Upload ${idx + 1}`}
+                          className="w-full h-32 object-cover"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-primary">
+                    <Upload className="h-4 w-4" />
+                    Add more images
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveSelected}
+                      disabled={selectedIndex === null}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete selected
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleClearAll}
+                      disabled={images.length === 0}
+                      className="gap-2"
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
             {error && (
@@ -139,7 +216,7 @@ export default function ImageIdPage() {
           </CardContent>
         </Card>
 
-        {preview && (
+        {images.length > 0 && (
           <div className="mb-6">
             <Button
               onClick={handleIdentify}
